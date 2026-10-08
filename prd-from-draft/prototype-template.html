@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<!--
+  草图原型骨架 / Prototype skeleton  v5.1
+  ============================================================
+  用法：复制本文件到 <工作区>/UI/prd/[需求名称]-原型.html
+  规则：
+    1. 色值一律使用 var(--semi-*) / var(--brand-*)，禁止硬编码十六进制
+       （仅彩色底 / 渐变上的 #FFFFFF、#041018 例外）
+    2. 圆角只用 --semi-border-radius-* / --brand-radius-*，间距只用 --spacing-*，字号只用 --font-size-*
+    3. 单文件自包含：图标为内联 SVG symbol，禁止外链字体/图片/CDN
+  视觉基线：
+    · H5  → example-h5-app（亮色 + 青 #1EC8C0 品牌层，主按钮蓝青渐变，交互主色 #165DFF）
+    · Web → example-admin-web（Arco Design 后台：圆角 2/4/8px、扁平卡片、
+            表头 #F7F8FA、min-width 1180px、指标卡色块、登录页）
+  核心规则：外壳决定几何形态，token 决定颜色
+    · H5（.phone）内组件自动切换为 App 几何：毛玻璃白底导航栏、44px 蓝青渐变主按钮、
+      14px 圆角卡片 + 柔和投影、42px 圆角输入框、2px 圆角标签
+    · Web（.web-layout）内组件为 Arco 后台几何：2px 控件圆角、4px 卡片圆角、
+      无边框扁平卡片、实色 #165DFF 主按钮
+  结构：
+    1) 设计 token（仅亮色）  2) 基础  3) 图标  4) 组件  5) H5 外壳  6) Web 外壳
+  按应用端保留对应外壳：H5 端用 .phone，Web 端用 .web-layout，双端则各留一份并加切换入口
+  仅亮色：本骨架不含暗色主题（无 [data-theme] 分支、无主题切换），色值只有一套
+  ============================================================
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>[需求名称] - 原型</title>
+<style>
+  /* ============================================================
+     1. 设计 token（完整规范见 prd-from-draft/DESIGN.md）
+     ============================================================ */
+  :root {
+    /* 1.1 语义色 */
+    --semi-color-primary: #165DFF;
+    --semi-color-primary-hover: #4080FF;
+    --semi-color-primary-active: #0E42D2;
+    --semi-color-primary-weak: rgba(22, 93, 255, 0.09);
+    --semi-color-secondary: #1EC8C0;
+    --semi-color-tertiary: #86909C;
+    --semi-color-success: #00B42A;
+    --semi-color-success-weak: rgba(0, 180, 42, 0.12);
+    --semi-color-warning: #FF7D00;
+    --semi-color-warning-weak: rgba(255, 125, 0, 0.12);
+    --semi-color-danger: #F53F3F;
+    --semi-color-danger-weak: rgba(245, 63, 63, 0.12);
+    --semi-color-info: #165DFF;
+    --semi-color-info-weak: rgba(22, 93, 255, 0.10);
+    /* 扩展语义色：用于标签分类（非状态反馈） */
+    --semi-color-purple: #722ED1;
+    --semi-color-purple-weak: rgba(114, 46, 209, 0.12);
+    --semi-color-cyan: #0FC6C2;
+    --semi-color-cyan-weak: rgba(15, 198, 194, 0.12);
+    --semi-color-orangered: #F77234;
+    --semi-color-orangered-weak: rgba(247, 114, 52, 0.12);
+
+    /* 1.2 品牌层（青 + 蓝青 CTA；深色只用于文字，不作为底色） */
+    --brand-cyan: #1EC8C0;
+    --brand-blue: #3D8BFD;
+    --brand-text: #0D1B2A;             /* H5 正文色（比 Web 的 #1D2129 偏冷） */
+    --brand-muted: #5A6D86;            /* H5 次级文字色（比 Web 的 #86909C 偏冷） */
+    --brand-on-cyan: #041018;          /* 青色渐变上的正文色 */
+    --brand-grad-cta: linear-gradient(140deg, #15D5FF 0%, #0578FF 95%);   /* H5 主按钮 / 主 CTA：首页开始 / 流程「下一步」/ FAB / 登录 */
+    --brand-grad-cta-active: linear-gradient(140deg, #0FB3DB 0%, #045FD4 95%);  /* 主按钮按下态（加深） */
+    --brand-grad-cyan: linear-gradient(135deg, #0FC4B8, #1EC8C0 40%, #3D8BFD);
+    --brand-grad-line: linear-gradient(90deg, transparent, #1EC8C0, #3D8BFD, transparent);
+    --brand-page: linear-gradient(180deg, #E6EEF7 0%, #EEF2F7 45%, #E8EEF5 100%);
+    --brand-home-bg: #F7F8FA;          /* H5 首页 / 列表页的平铺底色（非渐变页） */
+    --brand-surface: rgba(255, 255, 255, 0.95);
+    --brand-nav-light: rgba(255, 255, 255, 0.92);
+    --brand-field-bg: #F3F7FB;
+    --brand-field-border: #D8E2EE;
+    --brand-label: #3D516B;
+    --brand-hairline: rgba(15, 45, 80, 0.06);
+    --brand-shadow-card: 0 8px 28px rgba(8, 28, 55, 0.06);
+    --brand-shadow-cta: 0 10px 24px rgba(22, 93, 255, 0.35);
+    --brand-shadow-cyan: 0 8px 20px rgba(30, 200, 192, 0.30);
+    --brand-ring-cyan: 0 0 0 3px rgba(30, 200, 192, 0.12);
+    --brand-step-done: #E8F3FF;        /* 步骤「已完成」节点底色 */
+    /* App 几何圆角 */
+    --brand-radius-card: 14px;
+    --brand-radius-control: 12px;
+    --brand-radius-tag: 2px;
+
+    /* 1.3 背景与面层 */
+    --semi-color-bg-0: #F2F3F5;
+    --semi-color-bg-1: #FFFFFF;
+    --semi-color-bg-2: #FFFFFF;
+    --semi-color-fill-0: rgba(29, 33, 41, 0.05);
+    --semi-color-fill-1: rgba(29, 33, 41, 0.09);
+    --semi-color-fill-2: rgba(29, 33, 41, 0.13);
+
+    /* 1.4 文字与边框 */
+    --semi-color-text-0: #1D2129;
+    --semi-color-text-1: #4E5969;
+    --semi-color-text-2: #86909C;
+    --semi-color-text-3: #C9CDD4;
+    --semi-color-border: #E5E6EB;
+    --semi-color-focus-border: #165DFF;
+    --semi-color-disabled-bg: rgba(29, 33, 41, 0.04);
+    --semi-color-disabled-text: #C9CDD4;
+    --semi-color-disabled-border: #E5E6EB;
+    --semi-color-table-head: #F7F8FA;
+
+    /* 1.5 圆角 / 间距 / 字号（圆角为 Arco 后台刻度） */
+    --semi-border-radius-extra-small: 2px;
+    --semi-border-radius-small: 2px;
+    --semi-border-radius-medium: 4px;
+    --semi-border-radius-large: 8px;
+    --semi-border-radius-extra-large: 24px;
+    --semi-border-radius-full: 9999px;
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+
+    --font-size-small: 12px;
+    --font-size-regular: 14px;
+    --font-size-header-6: 16px;
+    --font-size-header-5: 16px;
+    --font-size-header-4: 18px;
+    --font-size-header-3: 24px;
+
+    /* 1.6 阴影与遮罩 */
+    --semi-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.02);
+    --semi-shadow-login: 0 8px 32px rgba(183, 196, 232, 0.2);
+    --semi-shadow-float: 0 0 1px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.1);
+    --semi-color-mask: rgba(0, 0, 0, 0.45);
+  }
+
+  /* ============================================================
+     2. 基础
+     ============================================================ */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: var(--font-size-regular);
+    color: var(--semi-color-text-0);
+    background: var(--semi-color-bg-0);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1, h2, h3, h4 { margin: 0; }
+  a { color: var(--semi-color-primary); text-decoration: none; cursor: pointer; }
+  .muted { color: var(--semi-color-text-2); }
+  .money { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .hidden { display: none !important; }
+
+  /* ============================================================
+     3. 图标（配合文末的 SVG symbol 图标库使用）
+     所有 symbol 统一 48 画布，线宽只由这里控制，不在 symbol 内写 stroke-width
+     线宽恒为 4（Arco 原生值），不随渲染尺寸补偿：小图标线细、大图标线粗，与真实后台一致
+     ============================================================ */
+  .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: butt; stroke-linejoin: miter; flex: 0 0 auto; }
+  .icon-sm { width: 16px; height: 16px; }
+  .icon-lg { width: 24px; height: 24px; }
+  /* 按钮 / 标签 / 输入框内自动降为 16px，避免控件被图标撑高 */
+  .btn .icon, .tag .icon, .input .icon, .select .icon { width: 16px; height: 16px; }
+
+  /* ============================================================
+     4. 组件
+     ============================================================ */
+
+  /* 4.1 按钮 */
+  .btn {
+    height: 32px; padding: 0 15px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 1px solid var(--semi-color-border);
+    border-radius: var(--semi-border-radius-small);
+    background: var(--semi-color-bg-1);
+    color: var(--semi-color-text-0);
+    font-size: var(--font-size-regular); font-family: inherit;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { background: var(--semi-color-fill-0); }
+  .btn-primary { background: var(--semi-color-primary); border-color: var(--semi-color-primary); color: #FFFFFF; }
+  .btn-primary:hover { background: var(--semi-color-primary-hover); border-color: var(--semi-color-primary-hover); }
+  /* 品牌渐变按钮：Web 端主 CTA 可选，H5 端 .btn-primary 自动呈现同款渐变 */
+  .btn-brand { background: var(--brand-grad-cta); border-color: transparent; color: #FFFFFF; box-shadow: var(--brand-shadow-cta); }
+  .btn-cyan { background: var(--brand-grad-cyan); border-color: transparent; color: var(--brand-on-cyan); box-shadow: var(--brand-shadow-cyan); }
+  /* 蓝青 CTA 渐变按钮：H5 的首页开始按钮 / 流程「下一步」/ 悬浮操作主键 */
+  .btn-cta { background: var(--brand-grad-cta); border-color: transparent; color: #FFFFFF; box-shadow: var(--brand-shadow-cta); }
+  .btn-cta:disabled, .btn-cta.is-disabled { opacity: .55; box-shadow: none; }
+  .btn-text { border-color: transparent; background: transparent; color: var(--semi-color-primary); padding: 0 8px; }
+  .btn-text:hover { background: var(--semi-color-fill-0); }
+  .btn-sm { height: 26px; padding: 0 10px; font-size: var(--font-size-small); }
+  .btn-block { width: 100%; }
+  .btn:disabled, .btn.is-disabled {
+    background: var(--semi-color-disabled-bg);
+    color: var(--semi-color-disabled-text);
+    border-color: var(--semi-color-border);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* 4.2 表单 */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 13px; color: var(--semi-color-text-1); }
+  .field-label.is-required::after { content: "*"; margin-left: var(--spacing-xs); color: var(--semi-color-danger); }
+  .input, .select, .textarea {
+    width: 100%; height: 32px; padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: var(--semi-border-radius-small);
+    background: var(--semi-color-fill-0);
+    color: var(--semi-color-text-0);
+    font-size: var(--font-size-regular); font-family: inherit;
+  }
+  .textarea { height: auto; padding: 8px 12px; line-height: 1.6; resize: vertical; }
+  .input::placeholder, .textarea::placeholder { color: var(--semi-color-text-3); }
+  .input:hover, .select:hover, .textarea:hover { background: var(--semi-color-fill-1); }
+  .input:focus, .select:focus, .textarea:focus {
+    outline: none;
+    background: var(--semi-color-bg-1);
+    border-color: var(--semi-color-focus-border);
+  }
+  .input.is-error, .select.is-error, .textarea.is-error { border-color: var(--semi-color-danger); }
+  .field-hint { font-size: var(--font-size-small); color: var(--semi-color-text-2); }
+  .field-hint.is-error { color: var(--semi-color-danger); }
+  .checkbox { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--semi-color-text-1); cursor: pointer; }
+  .checkbox input { width: 16px; height: 16px; accent-color: var(--semi-color-primary); }
+
+  /* 4.3 筛选栏 */
+  .filters { display: flex; flex-wrap: wrap; gap: var(--spacing-md); align-items: center; }
+  .filters .input, .filters .select { width: auto; }
+  .filters .field { margin-bottom: 0; }
+
+  /* 4.4 卡片与页头 */
+  .card {
+    background: var(--semi-color-bg-1);
+    border: 0;
+    border-radius: var(--semi-border-radius-medium);
+    padding: 20px;
+    box-shadow: var(--semi-shadow-card);
+  }
+  .card + .card, .card + .grid, .grid + .card { margin-top: var(--spacing-lg); }
+  /* 网格里的卡片是同行排列，不能用相邻兄弟间距把它们错开 */
+  .grid > .card + .card { margin-top: 0; }
+  /* 顶部品牌渐变装饰线（App 卡片特征） */
+  .card-accent { position: relative; overflow: hidden; }
+  .card-accent::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--brand-grad-line); }
+  .card-title {
+    font-size: var(--font-size-header-6); font-weight: 600;
+    margin-bottom: var(--spacing-lg);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title small { font-size: var(--font-size-small); color: var(--semi-color-text-2); font-weight: 400; margin-left: 8px; }
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg); }
+  .page-title { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .page-sub { color: var(--semi-color-text-2); font-size: 13px; }
+
+  /* 4.5 标签 */
+  .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--semi-border-radius-small); font-size: var(--font-size-small); white-space: nowrap; }
+  .tag-success { color: var(--semi-color-success); background: var(--semi-color-success-weak); }
+  .tag-warning { color: var(--semi-color-warning); background: var(--semi-color-warning-weak); }
+  .tag-danger  { color: var(--semi-color-danger);  background: var(--semi-color-danger-weak); }
+  .tag-info    { color: var(--semi-color-info);    background: var(--semi-color-info-weak); }
+  .tag-purple  { color: var(--semi-color-purple);  background: var(--semi-color-purple-weak); }
+  .tag-cyan    { color: var(--semi-color-cyan);    background: var(--semi-color-cyan-weak); }
+  .tag-orangered { color: var(--semi-color-orangered); background: var(--semi-color-orangered-weak); }
+  .tag-gray    { color: var(--semi-color-text-2);  background: var(--semi-color-fill-1); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; background: currentColor; }
+
+  /* 4.6 表格 */
+  .table-wrap { overflow-x: auto; }
+  /* 列宽按内容自适应，超出容器时横向滚动；若表格无需滚动，给 .table-wrap 加 .is-fit */
+  table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+  thead th {
+    padding: 10px 12px; text-align: left; white-space: nowrap;
+    font-weight: 500; color: var(--semi-color-text-1);
+    background: var(--semi-color-table-head);
+    border-bottom: 1px solid var(--semi-color-border);
+  }
+  tbody td { padding: 12px; border-bottom: 1px solid var(--semi-color-border); vertical-align: middle; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--semi-color-fill-0); }
+  td.ellipsis { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+  .table-wrap.is-fit table { width: 100%; }
+  .table-wrap.is-fit tbody td { white-space: normal; }
+  .row-actions { display: flex; gap: var(--spacing-md); white-space: nowrap; }
+  .row-actions a.is-disabled { color: var(--semi-color-disabled-text); cursor: not-allowed; }
+
+  /* 4.7 分页 */
+  .pagination { display: flex; align-items: center; justify-content: flex-end; gap: var(--spacing-sm); margin-top: var(--spacing-lg); font-size: 13px; color: var(--semi-color-text-2); }
+  .page-btn {
+    min-width: 28px; height: 28px; padding: 0 6px;
+    border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-small);
+    background: var(--semi-color-bg-1); color: var(--semi-color-text-1);
+    font-size: 13px; font-family: inherit; cursor: pointer;
+  }
+  .page-btn.is-active { background: var(--semi-color-primary); border-color: var(--semi-color-primary); color: #FFFFFF; }
+
+  /* 4.8 描述列表（详情用） */
+  .desc { border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-small); overflow: hidden; }
+  .desc-row { display: grid; grid-template-columns: 104px 1fr; border-bottom: 1px solid var(--semi-color-border); }
+  .desc-row:last-child { border-bottom: 0; }
+  .desc-label { padding: 10px 12px; background: var(--semi-color-fill-0); color: var(--semi-color-text-2); font-size: 13px; }
+  .desc-value { padding: 10px 12px; font-size: 13px; word-break: break-all; }
+  .desc-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--spacing-lg); }
+
+  /* 4.9 时间轴（处理进度 / 操作日志） */
+  .timeline { position: relative; padding-left: 22px; }
+  .timeline::before { content: ""; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 1px; background: var(--semi-color-border); }
+  .tl-item { position: relative; padding-bottom: 20px; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before { content: ""; position: absolute; left: -21px; top: 5px; width: 9px; height: 9px; border-radius: 50%; background: var(--semi-color-primary); box-shadow: 0 0 0 3px var(--semi-color-bg-2); }
+  .tl-item.is-success::before { background: var(--semi-color-success); }
+  .tl-item.is-failed::before { background: var(--semi-color-danger); }
+  .tl-item.is-running::before { background: var(--semi-color-info); }
+  .tl-item.is-pending::before { background: var(--semi-color-warning); }
+  .tl-head { display: flex; align-items: center; gap: var(--spacing-sm); font-size: 13px; }
+  .tl-item p { margin: 6px 0 4px; color: var(--semi-color-text-1); font-size: 13px; }
+  .tl-item small { color: var(--semi-color-text-2); font-size: var(--font-size-small); }
+
+  /* 4.10 开关 */
+  .switch { width: 40px; height: 22px; border-radius: var(--semi-border-radius-full); background: var(--semi-color-fill-2); position: relative; cursor: pointer; transition: background .2s; flex: 0 0 auto; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #FFFFFF; transition: left .2s; }
+  .switch.is-on { background: var(--semi-color-primary); }
+  .switch.is-on::after { left: 20px; }
+
+  /* 4.11 提示条 */
+  .alert { display: flex; gap: var(--spacing-sm); padding: 12px var(--spacing-lg); margin-bottom: var(--spacing-lg); border-radius: var(--semi-border-radius-small); font-size: 13px; line-height: 1.6; }
+  .alert .icon { margin-top: 2px; }
+  .alert-info { background: var(--semi-color-info-weak); color: var(--semi-color-text-1); }
+  .alert-warning { background: var(--semi-color-warning-weak); color: var(--semi-color-text-1); }
+  .alert-danger { background: var(--semi-color-danger-weak); color: var(--semi-color-text-1); }
+
+  /* 4.12 空态 / 加载态 */
+  .empty { padding: 40px 0; text-align: center; color: var(--semi-color-text-2); font-size: 13px; }
+  .empty .icon { width: 40px; height: 40px; stroke-width: 2.4; color: var(--semi-color-text-3); margin-bottom: var(--spacing-md); }
+  .skeleton { height: 14px; border-radius: var(--semi-border-radius-small); background: var(--semi-color-fill-1); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+  /* 4.13 浮层：抽屉 / 弹窗 / 提示 */
+  .overlay { position: fixed; inset: 0; z-index: 100; background: var(--semi-color-mask); opacity: 0; visibility: hidden; transition: opacity .2s; }
+  .overlay.is-open { opacity: 1; visibility: visible; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 110;
+    width: 640px; max-width: 92vw;
+    display: flex; flex-direction: column;
+    background: var(--semi-color-bg-2);
+    transform: translateX(100%); transition: transform .25s ease;
+  }
+  .drawer.is-open { transform: none; }
+  .drawer-head { padding: var(--spacing-lg) 20px; border-bottom: 1px solid var(--semi-color-border); display: flex; align-items: center; justify-content: space-between; font-size: var(--font-size-header-6); font-weight: 600; }
+  .drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .drawer-foot { padding: var(--spacing-md) 20px; border-top: 1px solid var(--semi-color-border); display: flex; gap: var(--spacing-sm); justify-content: flex-end; }
+  .section-title { margin: var(--spacing-xl) 0 var(--spacing-md); padding-left: var(--spacing-sm); border-left: 3px solid var(--semi-color-primary); font-weight: 600; }
+  .section-title:first-child { margin-top: 0; }
+
+  .modal {
+    position: fixed; top: 50%; left: 50%; z-index: 110;
+    width: 520px; max-width: 92vw; max-height: 84vh;
+    display: flex; flex-direction: column;
+    background: var(--semi-color-bg-2);
+    border-radius: var(--semi-border-radius-large);
+    box-shadow: var(--semi-shadow-float);
+    opacity: 0; visibility: hidden;
+    transform: translate(-50%, -46%) scale(.98);
+    transition: all .2s;
+  }
+  .modal.is-open { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+  .modal.is-narrow { width: 420px; }
+  .modal-head { padding: var(--spacing-lg) 20px; border-bottom: 1px solid var(--semi-color-border); font-size: var(--font-size-header-6); font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
+  .modal-body { padding: 20px; overflow-y: auto; }
+  .modal-foot { padding: var(--spacing-md) 20px; border-top: 1px solid var(--semi-color-border); display: flex; gap: var(--spacing-sm); justify-content: flex-end; }
+
+  .icon-btn { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--semi-border-radius-small); background: transparent; color: var(--semi-color-text-1); cursor: pointer; position: relative; }
+  .icon-btn:hover { background: var(--semi-color-fill-1); }
+
+  .toast {
+    position: fixed; top: 24px; left: 50%; z-index: 200;
+    display: flex; align-items: center; gap: var(--spacing-sm);
+    padding: 10px var(--spacing-lg);
+    border: 1px solid var(--semi-color-border);
+    border-radius: var(--semi-border-radius-medium);
+    background: var(--semi-color-bg-2);
+    box-shadow: var(--semi-shadow-float);
+    font-size: 13px;
+    opacity: 0; visibility: hidden;
+    transform: translate(-50%, -12px);
+    transition: all .2s;
+  }
+  .toast.is-open { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+
+  /* 4.14 指标卡（看板 / 工作台） */
+  .grid { display: grid; gap: var(--spacing-lg); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .metric-label { color: var(--semi-color-text-1); font-size: 13px; }
+  .metric-value { margin-top: 10px; font-size: 28px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .metric-trend { margin-top: 12px; color: var(--semi-color-text-2); font-size: var(--font-size-small); }
+  .metric-head { display: flex; align-items: center; justify-content: space-between; }
+  .metric-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--semi-border-radius-medium); }
+  /* 指标卡图标色块：图标取语义色，底取同色 weak，不写死色值 */
+  .metric-icon.is-blue   { color: var(--semi-color-primary);   background: var(--semi-color-primary-weak); }
+  .metric-icon.is-cyan   { color: var(--semi-color-cyan);      background: var(--semi-color-cyan-weak); }
+  .metric-icon.is-orange { color: var(--semi-color-warning);   background: var(--semi-color-warning-weak); }
+  .metric-icon.is-red    { color: var(--semi-color-danger);    background: var(--semi-color-danger-weak); }
+  .metric-icon.is-green  { color: var(--semi-color-success);   background: var(--semi-color-success-weak); }
+  .metric-icon.is-purple { color: var(--semi-color-purple);    background: var(--semi-color-purple-weak); }
+  .up { color: var(--semi-color-success); }
+  .down { color: var(--semi-color-danger); }
+
+  /* 4.15 分组标题（H5 页面内的小节标题，与抽屉的 .section-title 区分） */
+  .group-title { margin: 0 0 6px; font-size: var(--font-size-header-6); font-weight: 700; color: var(--semi-color-text-0); }
+  .group-desc { margin: 0 0 14px; font-size: var(--font-size-small); color: var(--semi-color-text-2); line-height: 1.6; }
+
+  /* 4.16 步骤条（H5 流程页） */
+  .steps { display: flex; align-items: center; gap: var(--spacing-sm); }
+  .step { display: flex; align-items: center; gap: 6px; font-size: var(--font-size-small); color: var(--semi-color-text-2); white-space: nowrap; }
+  /* 步骤节点是 UI 形状不是图标：圆点全用 CSS，只有「已完成」内嵌一个 Arco 勾 */
+  .step-dot { width: 18px; height: 18px; flex: 0 0 auto; border: 2px solid var(--semi-color-border); border-radius: var(--semi-border-radius-full); background: var(--semi-color-bg-1); display: grid; place-items: center; }
+  .step.is-done { color: var(--semi-color-text-1); }
+  .step.is-done .step-dot { background: var(--brand-step-done); border-color: var(--brand-step-done); color: var(--semi-color-primary); }
+  .step.is-done .step-dot .icon { width: 12px; height: 12px; }
+  .step.is-current { color: var(--semi-color-primary); font-weight: 600; }
+  .step.is-current .step-dot { background: var(--semi-color-primary); border-color: var(--semi-color-primary); }
+  .step-line { flex: 1; height: 1px; background: var(--semi-color-border); }
+  .step-line.is-on { background: var(--semi-color-primary); }
+
+  /* ============================================================
+     5. H5 外壳（作用域内自动切换为 App 几何）
+     ============================================================ */
+  .phone {
+    max-width: 430px; min-height: 100vh; margin: 0 auto;
+    background: var(--brand-page); display: flex; flex-direction: column;
+    /* H5 正文与次级文字比 Web 偏冷（#0D1B2A / #5A6D86），随外壳切换，不污染 Web 端 */
+    --semi-color-text-0: var(--brand-text);
+    --semi-color-text-2: var(--brand-muted);
+  }
+  /* 平铺底色页（首页 / 列表页）：H5 的首页不是渐变页，给 .phone 加 .is-flat 切平铺底色 */
+  .phone.is-flat { background: var(--brand-home-bg); }
+  .navbar {
+    position: sticky; top: 0; z-index: 10;
+    height: 44px; padding: 0 4px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--brand-nav-light); color: var(--semi-color-text-0);
+    border-bottom: 1px solid var(--semi-color-border);
+    backdrop-filter: saturate(1.4) blur(16px);
+    -webkit-backdrop-filter: saturate(1.4) blur(16px);
+  }
+  .navbar-title {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 17px; font-weight: 500; letter-spacing: .02em;
+    max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .navbar-side { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .navbar-back {
+    width: 44px; height: 44px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border: 0; border-radius: var(--semi-border-radius-large);
+    background: transparent; color: var(--semi-color-text-0); cursor: pointer;
+  }
+  .navbar-back:hover { background: var(--semi-color-fill-0); }
+  .phone-body { flex: 1; padding: 14px; }
+
+  /* App 几何：卡片 */
+  .phone .card {
+    background: var(--brand-surface);
+    border: 1px solid var(--brand-hairline);
+    border-radius: var(--brand-radius-card);
+    padding: 16px;
+    box-shadow: var(--brand-shadow-card);
+  }
+  .phone .card + .card, .phone .card + .grid, .phone .grid + .card { margin-top: var(--spacing-md); }
+  .phone .card-title { font-size: var(--font-size-regular); font-weight: 700; margin-bottom: var(--spacing-md); }
+
+  /* App 几何：按钮 */
+  .phone .btn { height: 44px; border-radius: var(--brand-radius-control); font-weight: 650; letter-spacing: .5px; }
+  .phone .btn-primary { background: var(--brand-grad-cta); border-color: transparent; color: #FFFFFF; box-shadow: var(--brand-shadow-cta); }
+  /* 悬浮保持底色不变，只在按下时加深 */
+  .phone .btn-primary:hover { background: var(--brand-grad-cta); }
+  .phone .btn-primary:active { background: var(--brand-grad-cta-active); }
+  .phone .btn-sm { height: 32px; border-radius: var(--brand-radius-control); font-weight: 500; letter-spacing: 0; }
+
+  /* App 几何：表单 */
+  .phone .input, .phone .select, .phone .textarea { height: 42px; border-radius: var(--brand-radius-control); background: var(--brand-field-bg); border-color: var(--brand-field-border); }
+  .phone .input:focus, .phone .select:focus, .phone .textarea:focus { border-color: var(--brand-cyan); box-shadow: var(--brand-ring-cyan); }
+  .phone .field-label { color: var(--brand-label); font-weight: 500; }
+
+  /* App 几何：标签 */
+  .phone .tag { height: 20px; padding: 0 4px; border-radius: var(--brand-radius-tag); }
+  /* App 几何：浮层 */
+  .phone .modal { border-radius: var(--brand-radius-control); }
+  .phone .toast { border-radius: var(--brand-radius-control); }
+
+  .phone-footer {
+    position: sticky; bottom: 0;
+    padding: var(--spacing-md) 14px;
+    padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
+    background: var(--brand-nav-light);
+    backdrop-filter: saturate(1.4) blur(16px);
+    -webkit-backdrop-filter: saturate(1.4) blur(16px);
+    box-shadow: 0 -8px 24px rgba(15, 35, 80, 0.06);
+  }
+  /* 底部栏与标签栏同时存在时，底部栏让位，避免两者吸底重叠 */
+  .phone-footer:has(+ .tabbar) { bottom: 50px; }
+
+  /* 底部标签栏（H5 有 Tab 导航时使用） */
+  .tabbar {
+    position: sticky; bottom: 0; z-index: 10;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    height: 50px; padding-bottom: env(safe-area-inset-bottom);
+    background: var(--semi-color-bg-1);
+    border-top: 1px solid var(--semi-color-border);
+  }
+  .tab-item {
+    border: 0; background: transparent; font-family: inherit; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-size: 10px; line-height: 14px; color: var(--semi-color-text-2);
+  }
+  .tab-item.is-active { color: var(--semi-color-primary); font-weight: 600; }
+
+  /* ============================================================
+     6. Web 外壳（企业中性几何，仅换品牌色）
+     ============================================================ */
+  /* 后台为固定桌面宽度，原型同样锁 1180px，避免窄视口把表格挤变形 */
+  .web-layout { display: flex; min-height: 100vh; min-width: 1180px; }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; z-index: 20;
+    width: 220px; display: flex; flex-direction: column;
+    background: var(--semi-color-bg-1);
+    border-right: 1px solid var(--semi-color-border);
+    transition: width .2s;
+  }
+  .brand { height: 60px; display: flex; align-items: center; gap: 10px; padding: 0 18px; font-size: var(--font-size-header-6); font-weight: 600; white-space: nowrap; overflow: hidden; }
+  .brand-mark { width: 30px; height: 30px; flex: 0 0 auto; border-radius: var(--semi-border-radius-large); background: var(--brand-grad-cyan); color: var(--brand-on-cyan); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+  .menu { flex: 1; overflow-y: auto; padding: var(--spacing-sm); }
+  .menu-group { padding: 14px 12px 6px; font-size: var(--font-size-small); color: var(--semi-color-text-3); white-space: nowrap; }
+  .menu-item {
+    display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px;
+    margin-bottom: var(--spacing-xs);
+    border-radius: var(--semi-border-radius-medium);
+    color: var(--semi-color-text-1); font-size: var(--font-size-regular);
+    cursor: pointer; white-space: nowrap; overflow: hidden;
+  }
+  .menu-item:hover { background: var(--semi-color-fill-1); }
+  .menu-item.is-active { background: var(--semi-color-primary-weak); color: var(--semi-color-primary); font-weight: 500; }
+
+  .web-main { flex: 1; min-width: 0; margin-left: 220px; display: flex; flex-direction: column; transition: margin-left .2s; }
+  .web-layout.is-collapsed .sidebar { width: 64px; }
+  .web-layout.is-collapsed .web-main { margin-left: 64px; }
+  .web-layout.is-collapsed .brand span,
+  .web-layout.is-collapsed .menu-item span,
+  .web-layout.is-collapsed .menu-group { display: none; }
+  .web-layout.is-collapsed .menu-item { justify-content: center; padding: 0; }
+
+  .web-header {
+    height: 60px; position: sticky; top: 0; z-index: 15;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    background: var(--semi-color-bg-1);
+    border-bottom: 1px solid var(--semi-color-border);
+  }
+  .header-left, .header-right { display: flex; align-items: center; gap: 10px; }
+  .crumb { font-size: 13px; color: var(--semi-color-text-2); }
+  .crumb b { color: var(--semi-color-text-0); font-weight: 500; }
+  .user-entry { display: flex; align-items: center; gap: 10px; padding: 4px; border-radius: var(--semi-border-radius-small); cursor: pointer; }
+  .user-entry:hover { background: var(--semi-color-fill-0); }
+  .avatar { width: 32px; height: 32px; flex: 0 0 auto; border-radius: var(--semi-border-radius-full); background: var(--semi-color-primary); color: #FFFFFF; display: grid; place-items: center; font-size: 13px; font-weight: 500; }
+  .user-meta { display: flex; flex-direction: column; line-height: 1.3; }
+  .user-meta strong { font-size: 13px; font-weight: 500; }
+  .user-meta span { font-size: 11px; color: var(--semi-color-text-2); }
+
+  .web-body { padding: 20px; }
+  .view { display: none; }
+  .view.is-active { display: block; }
+
+  /* ============================================================
+     6.1 登录页（后台原型首屏，按需保留）
+     背景默认用 --brand-page 渐变占位；有设计图时改为内联 data URI，禁止外链
+     ============================================================ */
+  .login-page {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 40px 120px 40px 40px;
+    background: var(--brand-page);
+  }
+  .login-card {
+    width: 452px; padding: 40px;
+    background: var(--semi-color-bg-1);
+    border-radius: var(--semi-border-radius-extra-large);
+    box-shadow: var(--semi-shadow-login);
+  }
+  .login-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px; }
+  .login-logo { width: 50px; height: 50px; border-radius: var(--semi-border-radius-large); background: var(--brand-grad-cyan); color: var(--brand-on-cyan); display: grid; place-items: center; font-size: 16px; font-weight: 700; }
+  .login-title { margin: 0; font-size: var(--font-size-header-3); font-weight: 500; line-height: 32px; color: var(--semi-color-text-0); }
+  .login-sub { color: var(--semi-color-text-2); font-size: var(--font-size-regular); }
+  .login-card .field { margin-bottom: 20px; }
+  .login-card .input { height: 46px; border-radius: var(--semi-border-radius-large); background: var(--semi-color-fill-1); }
+  .login-card .input:hover { background: var(--semi-color-fill-2); }
+  .login-card .input:focus { background: var(--semi-color-bg-1); border-color: var(--semi-color-focus-border); }
+  .login-card .btn-primary { height: 46px; border-radius: var(--semi-border-radius-large); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     图标库：整段复制，用 <svg class="icon"><use href="#i-search"/></svg> 引用
+     规格：48 画布 / currentColor / 圆头圆角；渲染线宽由 .icon 系列控制，清单与来源见文末注释
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <!-- 导航 -->
+  <symbol id="i-dashboard" viewBox="0 0 48 48"><path d="M41.808 24c.118 4.63-1.486 9.333-5.21 13m5.21-13h-8.309m8.309 0c-.112-4.38-1.767-8.694-4.627-12M24 6c5.531 0 10.07 2.404 13.18 6M24 6c-5.724 0-10.384 2.574-13.5 6.38M24 6v7.5M37.18 12 31 17.5m-20.5-5.12L17 17.5m-6.5-5.12C6.99 16.662 5.44 22.508 6.53 28m4.872 9c-2.65-2.609-4.226-5.742-4.873-9m0 0 8.97-3.5"/>
+<path d="M24 32a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 0V19"/></symbol>
+  <symbol id="i-order" viewBox="0 0 48 48"><rect x="9" y="18" width="30" height="22" rx="1"/>
+<path d="M6 9a1 1 0 0 1 1-1h34a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V9ZM19 27h10"/></symbol>
+  <symbol id="i-file" viewBox="0 0 48 48"><path d="M16 21h16m-16 8h10m11 13H11a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h21l7 7v27a2 2 0 0 1-2 2Z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 48 48"><path d="M24 13 7 7v28l17 6 17-6V7l-17 6Zm0 0v27.5M29 18l7-2.5M29 25l7-2.5M29 32l7-2.5M19 18l-7-2.5m7 9.5-7-2.5m7 9.5-7-2.5"/></symbol>
+  <symbol id="i-storage" viewBox="0 0 48 48"><path d="M7 18h34v12H7V18ZM40 6H8a1 1 0 0 0-1 1v11h34V7a1 1 0 0 0-1-1ZM7 30h34v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V30Z"/><path d="M13.02 36H13v.02h.02V36Z"/><path d="M13 12v-2h-2v2h2Zm.02 0h2v-2h-2v2Zm0 .02v2h2v-2h-2Zm-.02 0h-2v2h2v-2ZM13 14h.02v-4H13v4Zm-1.98-2v.02h4V12h-4Zm2-1.98H13v4h.02v-4Zm1.98 2V12h-4v.02h4Z" fill="currentColor" stroke="none"/><path d="M13.02 24H13v.02h.02V24Z"/></symbol>
+  <symbol id="i-apps" viewBox="0 0 48 48"><path d="M7 7h13v13H7zM28 7h13v13H28zM7 28h13v13H7zM28 28h13v13H28z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 48 48"><circle cx="18" cy="15" r="7"/>
+<circle cx="34" cy="19" r="4"/>
+<path d="M6 34a6 6 0 0 1 6-6h12a6 6 0 0 1 6 6v6H6v-6ZM34 30h4a4 4 0 0 1 4 4v4h-8"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 48 48"><path d="M41 7H29v34h12V7ZM29 18H18v23h11V18ZM18 29H7v12h11V29Z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 48 48"><path d="M18.797 6.732A1 1 0 0 1 19.76 6h8.48a1 1 0 0 1 .964.732l1.285 4.628a1 1 0 0 0 1.213.7l4.651-1.2a1 1 0 0 1 1.116.468l4.24 7.344a1 1 0 0 1-.153 1.2L38.193 23.3a1 1 0 0 0 0 1.402l3.364 3.427a1 1 0 0 1 .153 1.2l-4.24 7.344a1 1 0 0 1-1.116.468l-4.65-1.2a1 1 0 0 0-1.214.7l-1.285 4.628a1 1 0 0 1-.964.732h-8.48a1 1 0 0 1-.963-.732L17.51 36.64a1 1 0 0 0-1.213-.7l-4.65 1.2a1 1 0 0 1-1.116-.468l-4.24-7.344a1 1 0 0 1 .153-1.2L9.809 24.7a1 1 0 0 0 0-1.402l-3.364-3.427a1 1 0 0 1-.153-1.2l4.24-7.344a1 1 0 0 1 1.116-.468l4.65 1.2a1 1 0 0 0 1.213-.7l1.286-4.628Z"/>
+<path d="M30 24a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z"/></symbol>
+  <symbol id="i-safe" viewBox="0 0 48 48"><path d="m16.825 22.165 6 6 10-10M24 6c7 4 16 5 16 5v15s-2 12-16 16.027C10 38 8 26 8 26V11s9-1 16-5Z"/></symbol>
+  <!-- 操作 -->
+  <symbol id="i-search" viewBox="0 0 48 48"><path d="M33.072 33.071c6.248-6.248 6.248-16.379 0-22.627-6.249-6.249-16.38-6.249-22.628 0-6.248 6.248-6.248 16.379 0 22.627 6.248 6.248 16.38 6.248 22.628 0Zm0 0 8.485 8.485"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 48 48"><path d="M38.837 18C36.463 12.136 30.715 8 24 8 15.163 8 8 15.163 8 24s7.163 16 16 16c7.455 0 13.72-5.1 15.496-12M40 8v10H30"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 48 48"><path d="M5 24h38M24 5v38"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 48 48"><path d="m30.48 19.038 5.733-5.734a1 1 0 0 0 0-1.414l-5.586-5.586a1 1 0 0 0-1.414 0l-5.734 5.734m7 7L15.763 33.754a1 1 0 0 1-.59.286l-6.048.708a1 1 0 0 1-1.113-1.069l.477-6.31a1 1 0 0 1 .29-.631l14.7-14.7m7 7-7-7M6 42h36"/></symbol>
+  <symbol id="i-download" viewBox="0 0 48 48"><path d="m33.072 22.071-9.07 9.071-9.072-9.07M24 5v26m16 4v6H8v-6"/></symbol>
+  <symbol id="i-fold" viewBox="0 0 48 48"><path d="M42 11H6M42 24H22M42 37H6M13.66 26.912l-4.82-3.118 4.82-3.118v6.236Z"/></symbol>
+  <symbol id="i-unfold" viewBox="0 0 48 48"><path d="M6 11h36M22 24h20M6 37h36M8 20.882 12.819 24 8 27.118v-6.236Z"/></symbol>
+  <symbol id="i-right" viewBox="0 0 48 48"><path d="m27.728 11.27 12.728 12.728-12.728 12.728M5 24h34.295"/></symbol>
+  <symbol id="i-down" viewBox="0 0 48 48"><path d="M39.6 17.443 24.043 33 8.487 17.443"/></symbol>
+  <symbol id="i-close" viewBox="0 0 48 48"><path d="M9.857 9.858 24 24m0 0 14.142 14.142M24 24 38.142 9.858M24 24 9.857 38.142"/></symbol>
+  <symbol id="i-link" viewBox="0 0 48 48"><path d="m14.1 25.414-4.95 4.95a6 6 0 0 0 8.486 8.485l8.485-8.485a6 6 0 0 0 0-8.485m7.779.707 4.95-4.95a6 6 0 1 0-8.486-8.485l-8.485 8.485a6 6 0 0 0 0 8.485"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 48 48"><path d="M24 9c7.18 0 13 5.82 13 13v13H11V22c0-7.18 5.82-13 13-13Zm0 0V4M6 35h36m-25 7h14"/></symbol>
+  <symbol id="i-delete" viewBox="0 0 48 48"><path d="M5 11h5.5m0 0v29a1 1 0 0 0 1 1h25a1 1 0 0 0 1-1V11m-27 0H16m21.5 0H43m-5.5 0H32m-16 0V7h16v4m-16 0h16M20 18v15m8-15v15"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 48 48"><path d="M30 42V22.549a1 1 0 0 1 .463-.844l10.074-6.41A1 1 0 0 0 41 14.45V8a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v6.451a1 1 0 0 0 .463.844l10.074 6.41a1 1 0 0 1 .463.844V37"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 48 48"><path d="M14.93 17.071 24.001 8l9.071 9.071m-9.07 16.071v-25M40 35v6H8v-6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 48 48"><path d="M38 25v-2h2v2h-2ZM23 25v-2h2v2h-2ZM8 25v-2h2v2H8Z" fill="currentColor" stroke="none"/><path d="M38 25v-2h2v2h-2ZM23 25v-2h2v2h-2ZM8 25v-2h2v2H8Z"/></symbol>
+  <!-- 状态 -->
+  <symbol id="i-check" viewBox="0 0 48 48"><path d="m15 22 7 7 11.5-11.5M42 24c0 9.941-8.059 18-18 18S6 33.941 6 24 14.059 6 24 6s18 8.059 18 18Z"/></symbol>
+  <symbol id="i-check-plain" viewBox="0 0 48 48"><path d="M41.678 11.05 19.05 33.678 6.322 20.95"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 48 48"><path d="M24 28V14m0 16v4M6 24c0-9.941 8.059-18 18-18s18 8.059 18 18-8.059 18-18 18S6 33.941 6 24Z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 48 48"><path d="M24 20v14m0-16v-4m18 10c0 9.941-8.059 18-18 18S6 33.941 6 24 14.059 6 24 6s18 8.059 18 18Z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 48 48"><path d="M24 14v10h9.5m8.5 0c0 9.941-8.059 18-18 18S6 33.941 6 24 14.059 6 24 6s18 8.059 18 18Z"/></symbol>
+  <symbol id="i-rise" viewBox="0 0 48 48"><path d="M23.992 6.01a.01.01 0 0 1 .016 0l9.978 11.974a.01.01 0 0 1-.007.016H14.02a.01.01 0 0 1-.007-.016l9.978-11.975Z"/><path d="m24 6 10 12H14L24 6Z" fill="currentColor" stroke="none"/><path d="M26 42h-4V16h4z"/><path d="M26 42h-4V16h4z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-fall" viewBox="0 0 48 48"><path d="M24.008 41.99a.01.01 0 0 1-.016 0l-9.978-11.974A.01.01 0 0 1 14.02 30H33.98a.01.01 0 0 1 .007.016l-9.978 11.975Z"/><path d="M24 42 14 30h20L24 42Z" fill="currentColor" stroke="none"/><path d="M22 6h4v26h-4z"/><path d="M22 6h4v26h-4z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-empty" viewBox="0 0 48 48"><path d="M24 5v6m7 1 4-4m-18 4-4-4m28.5 22H28s-1 3-4 3-4-3-4-3H6.5M40 41H8a2 2 0 0 1-2-2v-8.46a2 2 0 0 1 .272-1.007l6.15-10.54A2 2 0 0 1 14.148 18H33.85a2 2 0 0 1 1.728.992l6.149 10.541A2 2 0 0 1 42 30.541V39a2 2 0 0 1-2 2Z"/></symbol>
+  <!-- 对象 -->
+  <symbol id="i-user" viewBox="0 0 48 48"><path d="M7 37c0-4.97 4.03-8 9-8h16c4.97 0 9 3.03 9 8v3a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-3Z"/>
+<circle cx="24" cy="15" r="8"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 48 48"><path d="M7 22h34M14 5v8m20-8v8M8 41h32a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v30a1 1 0 0 0 1 1Z"/></symbol>
+  <!-- App -->
+  <symbol id="i-back" viewBox="0 0 48 48"><path d="M20.272 11.27 7.544 23.998l12.728 12.728M43 24H8.705"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 48 48"><path d="m16 39.513 15.556-15.557L16 8.4"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 48 48"><path clip-rule="evenodd" d="M24 37c6.627 0 12.627-4.333 18-13-5.373-8.667-11.373-13-18-13-6.627 0-12.627 4.333-18 13 5.373 8.667 11.373 13 18 13Z"/>
+<path d="M29 24a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 48 48"><path d="m33 12-1.862-3.724A.5.5 0 0 0 30.691 8H17.309a.5.5 0 0 0-.447.276L15 12m16 14a7 7 0 1 1-14 0 7 7 0 0 1 14 0ZM7 40h34a1 1 0 0 0 1-1V13a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v26a1 1 0 0 0 1 1Z"/></symbol>
+  <symbol id="i-wechat" viewBox="0 0 48 48"><path d="M32.09 16.362a14.39 14.39 0 0 0-6.927 1.716 13.087 13.087 0 0 0-5.008 4.676 11.936 11.936 0 0 0-1.856 6.473c.01 1.137.185 2.273.517 3.36h-1.505a26.653 26.653 0 0 1-4.766-.593l-.925-.166-5.665 2.93 1.55-4.848C3.179 26.783 1.018 23.077 1 18.792a11.951 11.951 0 0 1 2.188-6.927 14.943 14.943 0 0 1 5.938-5.027 18.579 18.579 0 0 1 8.248-1.837A18.82 18.82 0 0 1 24.8 6.506a16.863 16.863 0 0 1 5.893 4.128 11.963 11.963 0 0 1 2.992 5.817 17.922 17.922 0 0 0-1.595-.09Zm-20.152-.414a2.167 2.167 0 0 0 1.505-.471c.405-.378.62-.908.593-1.46a1.881 1.881 0 0 0-.592-1.46 2.025 2.025 0 0 0-1.506-.535 2.778 2.778 0 0 0-1.67.535c-.454.323-.728.849-.728 1.401a1.708 1.708 0 0 0 .727 1.523 2.925 2.925 0 0 0 1.671.467ZM47 28.99a9.573 9.573 0 0 1-1.59 5.193c-1.128 1.6-2.52 3-4.129 4.128l1.258 4.129-4.51-2.413h-.243a20.758 20.758 0 0 1-4.6.76 15.538 15.538 0 0 1-7.03-1.59 13.089 13.089 0 0 1-5.008-4.313 10.501 10.501 0 0 1-1.838-5.939 10.29 10.29 0 0 1 1.838-5.92c1.266-1.847 3-3.334 5.008-4.313a15.579 15.579 0 0 1 7.03-1.59 14.919 14.919 0 0 1 6.761 1.59 13.286 13.286 0 0 1 5.09 4.312 10.004 10.004 0 0 1 1.94 5.966H47ZM23.407 11.955a2.77 2.77 0 0 0-1.747.534 1.65 1.65 0 0 0-.76 1.46c-.017.584.27 1.146.76 1.46.498.36 1.1.544 1.716.535a2.083 2.083 0 0 0 1.505-.472c.368-.404.561-.925.534-1.46a1.834 1.834 0 0 0-.534-1.532 1.887 1.887 0 0 0-1.532-.534h.063v.009h-.005Zm5.256 15.03a2.016 2.016 0 0 0 1.46-.498c.332-.288.525-.7.534-1.137a1.612 1.612 0 0 0-.534-1.136 2.062 2.062 0 0 0-1.46-.499 1.58 1.58 0 0 0-1.092.499c-.305.296-.49.71-.498 1.136.009.427.184.84.498 1.137.288.305.679.48 1.092.499Zm8.953 0a2.016 2.016 0 0 0 1.46-.498c.332-.288.525-.7.534-1.137a1.558 1.558 0 0 0-.593-1.136 2.12 2.12 0 0 0-1.401-.499 1.493 1.493 0 0 0-1.092.499c-.305.296-.49.71-.498 1.136.009.427.184.84.498 1.137.279.305.674.49 1.092.499Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-home" viewBox="0 0 48 48"><path d="M7 17 24 7l17 10v24H7V17Z"/>
+<path d="M20 28h8v13h-8V28Z"/></symbol>
+  <symbol id="i-loan" viewBox="0 0 48 48"><path d="M7 33a1 1 0 0 1 1-1h32a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-7ZM29.081 21.18a8 8 0 1 0-10.163 0L14 32h20l-4.919-10.82Z"/></symbol>
+  <symbol id="i-radio" viewBox="0 0 48 48"><path d="M24 6c9.941 0 18 8.059 18 18s-8.059 18-18 18S6 33.941 6 24 14.059 6 24 6Z" clip-rule="evenodd"/><path d="M30 24a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" fill="currentColor" stroke="none"/><path d="M30 24a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 48 48"><path d="M10.5 7h6m0 0v10.5l-5.25 14M16.5 7h15m0 0h6m-6 0v10.5L37 32.167M11.25 31.5l-2.344 6.853A2 2 0 0 0 10.8 41h26.758a2 2 0 0 0 1.86-2.737L37 32.167M11.25 31.5c1.916 1.833 7.05 4.4 12.25 0s11.166-1.389 13.5.667M26 22.5v.01"/></symbol>
+  <!-- 扩展：心理 / 职业测评常用语义（取自 Arco outline，同上换算） -->
+  <symbol id="i-heart" viewBox="0 0 48 48"><path d="M38.083 12.912a9.929 9.929 0 0 1 .177 13.878l-.177.18L25.76 39.273c-.972.97-2.548.97-3.52 0L9.917 26.971l-.177-.181a9.929 9.929 0 0 1 .177-13.878c3.889-3.883 10.194-3.883 14.083 0 3.889-3.883 10.194-3.883 14.083 0Z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 48 48"><path d="M6 24c0-9.941 8.059-18 18-18s18 8.059 18 18-8.059 18-18 18c-6.26 0-11.775-3.197-15-8.047M6 24l-.5-.757h1L6 24Zm26 2h-9v-9"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 48 48"><path d="M42 24c0 9.941-8.059 18-18 18S6 33.941 6 24 14.059 6 24 6s18 8.059 18 18Z"/>
+<path d="m21.177 21.183 10.108-4.717a.2.2 0 0 1 .266.265L26.834 26.84l-10.109 4.717a.2.2 0 0 1-.266-.266l4.718-10.108Z"/></symbol>
+  <symbol id="i-idcard" viewBox="0 0 48 48"><path d="M11 17h9m-9 7h9m-9 7h5m-8 9h32a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v28a2 2 0 0 0 2 2Z"/>
+<path d="M36 33a7 7 0 1 0-14 0"/>
+<circle cx="29" cy="20" r="4"/></symbol>
+  <symbol id="i-question" viewBox="0 0 48 48"><path d="M13 17c0-5.523 4.925-10 11-10s11 4.477 11 10c0 3.607-2.1 6.767-5.25 8.526C26.857 27.142 24 29.686 24 33v3m0 5h.02v.02H24V41Z"/></symbol>
+  <symbol id="i-fire" viewBox="0 0 48 48"><path d="M17.577 27.477C20.022 22.579 17.041 12.98 24.546 6c0 0-1.156 15.55 5.36 17.181 2.145.537 2.68-5.369 4.289-8.59 0 0 .536 4.832 2.68 8.59 3.217 7.517-1 14.117-5.896 17.182-4.289 2.684-14.587 2.807-19.835-5.37-4.824-7.516 0-15.57 0-15.57s4.289 12.35 6.433 8.054Z"/></symbol>
+  <symbol id="i-message" viewBox="0 0 48 48"><path d="M15 20h18m-18 9h9M7 41h17.63C33.67 41 41 33.67 41 24.63V24c0-9.389-7.611-17-17-17S7 14.611 7 24v17Z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 48 48"><rect x="7" y="21" width="34" height="20" rx="1"/><path d="M15 21v-6a9 9 0 1 1 18 0v6M24 35v-8"/></symbol>
+  <symbol id="i-image" viewBox="0 0 48 48"><path d="m24 33 9-9v9h-9Zm0 0-3.5-4.5L17 33h7Zm15 8H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h30a2 2 0 0 1 2 2v30a2 2 0 0 1-2 2ZM15 15h2v2h-2v-2Z"/><path d="M33 33v-9l-9 9h9ZM23.5 33l-3-4-3 4h6ZM15 15h2v2h-2z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-bank" viewBox="0 0 48 48"><path d="M5 17h35.586c.89 0 1.337-1.077.707-1.707L33 7M43 31H7.414c-.89 0-1.337 1.077-.707 1.707L15 41"/></symbol>
+</defs></svg><!--
+  图标清单（55 个）· 内联 SVG symbol · 48 画布 · currentColor
+
+  ── 来源 ──
+    55 个全部取自 Arco Design Vue 官方 outline 图标（MIT 授权，商用可用），无自绘
+      github.com/arco-design/arco-design-vue → packages/web-vue/icon/_svgs/<分类>/outline/
+      原图规格为 48 画布 / stroke-width 4。本骨架原样保留 4，不做尺寸补偿——真实后台用的就是
+      Arco 原生组件（strokeWidth 默认 4，不随 size 变），16px 菜单图标呈现 1.33px、20px 呈现
+      1.67px，小图天然更细。改线宽只动 .icon 系列，不要改单个 symbol。
+
+      ⚠️ 抓图时必须连同**元素级附加属性一起搬**，一个都不能丢。Arco 图标在元素上只放
+      几何 + fill/stroke/clip-rule 三类附加属性：
+        · fill/stroke —— 5 个图标把同一形状画两遍：一遍描边勾边，一遍
+          fill="currentColor" stroke="none" 填实（i-rise / i-fall / i-storage /
+          i-more / i-wechat）。只抽 d 会丢掉填实那遍，图标变成双线空心：箭头只剩轮廓、
+          更多只剩空心圈。
+        · clip-rule —— i-eye 带 clip-rule="evenodd"。
+      反向的红线：**symbol 内不写 stroke-width / stroke-linecap / stroke-linejoin**。
+      Arco 49 个图标里没有任何一个覆盖这三项，写进去会盖掉 .icon 系列，让尺寸变体失效。
+      自查：grep 这 6 个 symbol 的附加属性；全库 grep 确认 symbol 内无 stroke-width/linecap。
+    几处「语义 ID ≠ Arco 原名」的对应（按语义命名，几何取自 Arco）：
+      i-radio = record（单选圆点）  i-chip = experiment（检验/身体）
+      i-bank = swap（转账）        i-loan = stamp（凭证/产品）
+    步骤节点不是图标：.step-dot 用 CSS 画圆，仅「已完成」内嵌 i-check-plain。
+
+  ── 用图规则：一图一义 ──
+    同一原型内，同级功能条目各用各的图标：菜单项之间、指标卡之间、Tab 之间、行操作之间
+    不得重复。骨架 49 个不够时从 Arco 补（outline 有 250 个，取法见上方「来源」），
+    不要为省事变重复——两个不同功能顶着同一个图标，看图的人会以为是同一个功能。
+    例外：关闭 ×、下拉 ⌄、Toast 与提示条的状态图标属于全局组件约定，可跨页复用。
+    指标卡与功能入口的图标要表达「这是什么」（单据、时长、机构），不要拿状态图标
+    （i-check / i-warn / i-clock）当内容图标——那是「好不好」的语义，留给状态组件。
+
+  ── 模板 ID ↔ Arco 图标名 ──
+    注意：图标名相近不代表图形相同。取图前务必先看实际图形——Arco 的 dashboard 是仪表盘
+    指针而非四宫格，right 是细尖角「＞」而 arrow-right 才带横杆，caret-right 是实心三角。
+    导航  i-dashboard = dashboard  i-order = archive  i-file = file  i-book = book  i-storage = storage  i-apps = apps  i-users = user-group  i-chart = bar-chart  i-settings = settings  i-safe = safe
+    操作  i-search = search  i-refresh = refresh  i-plus = plus  i-edit = edit  i-download = download  i-fold = menu-fold  i-unfold = menu-unfold  i-right = arrow-right  i-down = down  i-close = close  i-link = link  i-bell = notification  i-delete = delete  i-filter = filter  i-upload = upload  i-more = more
+    状态  i-check = check-circle  i-check-plain = check  i-warn = exclamation-circle  i-info = info-circle  i-clock = clock-circle  i-rise = arrow-rise  i-fall = arrow-fall  i-empty = empty
+    对象  i-user = user  i-calendar = calendar
+    App  i-back = arrow-left  i-chevron = right  i-eye = eye  i-camera = camera  i-wechat = wechat  i-home = home
+    自绘ID i-radio = record  i-chip = experiment  i-bank = swap  i-loan = stamp
+扩展  i-heart = heart  i-history = history  i-compass = compass  i-idcard = idcard  i-question = question  i-fire = fire  i-message = message  i-lock = lock  i-image = image
+
+  ── 线宽 ──
+    恒定 stroke-width = 4（Arco 原生值），只写在 .icon 上，任何尺寸都不覆盖。
+    对照真实后台：Arco 原生组件 strokeWidth 默认 4，16px 菜单图标 → 1.33px。
+    不要按渲染尺寸补偿（补偿会让 16px 图标粗到 1.8px，肉眼明显比真实后台粗）。
+-->
+
+<!-- ============================================================
+     登录页（后台原型首屏，按需保留）
+     默认隐藏；需要时去掉 display:none，并隐藏对应外壳
+     ============================================================ -->
+<div class="login-page" style="display:none">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="login-logo">[LOGO]</div>
+      <h1 class="login-title">[系统名称]</h1>
+      <div class="login-sub">[一句话说明系统用途]</div>
+    </div>
+    <div class="field">
+      <label class="field-label is-required">账号</label>
+      <input class="input" placeholder="请输入账号">
+    </div>
+    <div class="field">
+      <label class="field-label is-required">密码</label>
+      <input class="input" type="password" placeholder="请输入密码">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="toast('登录成功','success')">登录</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     H5 端（按需保留；Web 端需求可整段删除）
+     ============================================================ -->
+<div class="phone">
+  <div class="navbar">
+    <button class="navbar-back" onclick="history.back()"><svg class="icon"><use href="#i-back"/></svg></button>
+    <div class="navbar-title">[页面标题]</div>
+    <div class="navbar-side"></div>
+  </div>
+
+  <div class="phone-body">
+    <!-- 步骤条：流程页保留，普通页删除 -->
+    <div class="card card-accent">
+      <div class="steps">
+        <div class="step is-done"><span class="step-dot"><svg class="icon"><use href="#i-check-plain"/></svg></span>资料填写</div>
+        <span class="step-line is-on"></span>
+        <div class="step is-current"><span class="step-dot"></span>授信审核</div>
+        <span class="step-line"></span>
+        <div class="step"><span class="step-dot"></span>放款</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="group-title">[分组标题]</div>
+      <div class="group-desc">[一句话说明该分组的填写规则]</div>
+
+      <div class="field" style="margin-bottom:var(--spacing-lg)">
+        <label class="field-label is-required">[字段名称]</label>
+        <input class="input" placeholder="请输入[字段名称]">
+        <div class="field-hint">[校验规则提示]</div>
+      </div>
+
+      <div class="field" style="margin-bottom:var(--spacing-lg)">
+        <label class="field-label">[字段名称]</label>
+        <select class="select">
+          <option>[请选择]</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field-label is-required">[字段名称]</label>
+        <input class="input is-error" value="[错误值]">
+        <div class="field-hint is-error">[错误提示文案]</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone-footer">
+    <button class="btn btn-primary btn-block">提交</button>
+  </div>
+
+  <!-- 底部标签栏：有 Tab 导航时保留本段；与 .phone-footer 同时存在时 footer 在前 -->
+  <nav class="tabbar">
+    <button class="tab-item is-active"><svg class="icon"><use href="#i-home"/></svg>首页</button>
+    <button class="tab-item"><svg class="icon"><use href="#i-loan"/></svg>贷超</button>
+    <button class="tab-item"><svg class="icon"><use href="#i-user"/></svg>我的</button>
+  </nav>
+</div>
+
+<!-- ============================================================
+     Web 端（按需保留；H5 端需求可整段删除）
+     示例页 = 列表页 + 详情抽屉 + 表单弹窗 + 二次确认
+     ============================================================ -->
+<div class="web-layout" style="display:none">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">[LOGO]</div>
+      <span>[系统名称]</span>
+    </div>
+    <nav class="menu">
+      <div class="menu-item is-active" data-view="list">
+        <svg class="icon"><use href="#i-order"/></svg><span>[菜单项]</span>
+      </div>
+      <div class="menu-item">
+        <svg class="icon"><use href="#i-dashboard"/></svg><span>[菜单项]</span>
+      </div>
+      <div class="menu-item">
+        <svg class="icon"><use href="#i-settings"/></svg><span>[菜单项]</span>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="web-main">
+    <header class="web-header">
+      <div class="header-left">
+        <button class="icon-btn" onclick="toggleCollapse()" title="折叠菜单"><svg class="icon"><use href="#i-fold"/></svg></button>
+        <div class="crumb">[模块名] / <b>[页面标题]</b></div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" title="通知"><svg class="icon"><use href="#i-bell"/></svg></button>
+        <div class="user-entry" onclick="toast('[账号菜单]','info')">
+          <div class="avatar">[张]</div>
+          <div class="user-meta"><strong>[姓名]</strong><span>[角色]</span></div>
+          <svg class="icon"><use href="#i-down"/></svg>
+        </div>
+      </div>
+    </header>
+
+    <main class="web-body">
+      <section class="view is-active">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">[页面标题]</h1>
+            <div class="page-sub">[一句话说明页面用途与关键规则]</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="toast('列表已刷新','success')"><svg class="icon"><use href="#i-refresh"/></svg>刷新</button>
+            <button class="btn btn-primary" onclick="openModal('modal-form')"><svg class="icon"><use href="#i-plus"/></svg>[主操作]</button>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          <svg class="icon"><use href="#i-info"/></svg>
+          <span>[业务规则说明，如：定价前请先查看用户上传的协议]</span>
+        </div>
+
+        <!-- 指标卡：需要时保留本块，不需要整段删除
+             四个图标各不相同，且刻意避开状态图标（i-check / i-warn 留给 Toast 与提示条）——
+             指标卡的图标要表达「这是什么指标」，不是「这个指标好不好」 -->
+        <div class="grid grid-4" style="margin-bottom:var(--spacing-lg)">
+          <div class="card">
+            <div class="metric-head"><span class="metric-label">[指标名]</span><span class="metric-icon is-blue"><svg class="icon"><use href="#i-chart"/></svg></span></div>
+            <div class="metric-value">¥ 1,286,400</div>
+            <div class="metric-trend"><span class="up">+12.4%</span> 较上月同期</div>
+          </div>
+          <div class="card">
+            <div class="metric-head"><span class="metric-label">[指标名]</span><span class="metric-icon is-cyan"><svg class="icon"><use href="#i-file"/></svg></span></div>
+            <div class="metric-value">328</div>
+            <div class="metric-trend"><span class="up">+6.1%</span> 较上月同期</div>
+          </div>
+          <div class="card">
+            <div class="metric-head"><span class="metric-label">[指标名]</span><span class="metric-icon is-orange"><svg class="icon"><use href="#i-clock"/></svg></span></div>
+            <div class="metric-value">14</div>
+            <div class="metric-trend">平均处理时长 2h 18m</div>
+          </div>
+          <div class="card">
+            <div class="metric-head"><span class="metric-label">[指标名]</span><span class="metric-icon is-red"><svg class="icon"><use href="#i-warn"/></svg></span></div>
+            <div class="metric-value">3</div>
+            <div class="metric-trend"><span class="down">需尽快处理</span></div>
+          </div>
+        </div>
+
+        <!-- 筛选栏 -->
+        <div class="card">
+          <div class="filters">
+            <input class="input" placeholder="[关键词]" style="width:220px">
+            <select class="select" style="width:160px">
+              <option value="">[筛选字段]</option>
+            </select>
+            <input class="input" placeholder="[日期范围]" style="width:240px">
+            <label class="checkbox"><input type="checkbox">[快捷筛选]</label>
+            <button class="btn btn-primary"><svg class="icon"><use href="#i-search"/></svg>查询</button>
+            <button class="btn">重置</button>
+          </div>
+        </div>
+
+        <!-- 列表 -->
+        <div class="card">
+          <div class="card-title">
+            [列表名称] <small>共 [N] 条</small>
+            <button class="btn btn-sm">[批量操作]</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th><input type="checkbox"></th>
+                  <th>[列表字段]</th>
+                  <th>[列表字段]</th>
+                  <th>[状态]</th>
+                  <th>[金额]</th>
+                  <th>[时间]</th>
+                  <th style="text-align:center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><a onclick="openDrawer()">[主键值]</a></td>
+                  <td>[值]</td>
+                  <td><span class="tag tag-success">已完成</span></td>
+                  <td><span class="money">¥ 9,800</span></td>
+                  <td class="muted">2026-01-01 09:38</td>
+                  <td>
+                    <div class="row-actions" style="justify-content:center">
+                      <a onclick="openDrawer()">详情</a>
+                      <a onclick="askConfirm('[确认操作]','[确认后会发生什么？]')">[行操作]</a>
+                      <a class="is-disabled">[不可用操作]</a>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><a onclick="openDrawer()">[主键值]</a></td>
+                  <td>[值]</td>
+                  <td><span class="tag tag-danger">执行失败</span></td>
+                  <td><span class="muted">待定价</span></td>
+                  <td class="muted">2026-01-01 09:18</td>
+                  <td>
+                    <div class="row-actions" style="justify-content:center">
+                      <a onclick="openDrawer()">详情</a>
+                      <a onclick="openModal('modal-form')">定价</a>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span>共 [N] 条</span>
+            <button class="page-btn is-active">1</button>
+            <button class="page-btn">2</button>
+            <select class="select" style="width:96px;height:28px;font-size:12px"><option>20 条/页</option></select>
+          </div>
+        </div>
+
+        <!-- 空态示例：有数据时删除本块 -->
+        <div class="card">
+          <div class="empty">
+            <svg class="icon"><use href="#i-empty"/></svg>
+            <div>暂无数据</div>
+          </div>
+        </div>
+
+        <!-- 加载态示例：数据到位后删除本块 -->
+        <div class="card">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="skeleton" style="width:40%"></div>
+            <div class="skeleton" style="width:70%"></div>
+            <div class="skeleton" style="width:55%"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ============================================================
+     浮层：遮罩 / 详情抽屉 / 弹窗 / 二次确认 / 提示
+     ============================================================ -->
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<aside class="drawer" id="drawer">
+  <div class="drawer-head"><span>[详情标题]</span><button class="icon-btn" onclick="closeAll()"><svg class="icon"><use href="#i-close"/></svg></button></div>
+  <div class="drawer-body">
+    <div class="section-title">[分组标题]</div>
+    <div class="desc">
+      <div class="desc-row"><div class="desc-label">[字段]</div><div class="desc-value">[值]</div></div>
+      <div class="desc-row"><div class="desc-label">[状态]</div><div class="desc-value"><span class="tag tag-warning">处理中</span></div></div>
+      <div class="desc-row"><div class="desc-label">[金额]</div><div class="desc-value"><span class="money">¥ 9,800</span></div></div>
+    </div>
+
+    <div class="section-title">[分组标题：处理进度]</div>
+    <div class="timeline">
+      <div class="tl-item is-success">
+        <div class="tl-head"><strong>[步骤名]</strong><span class="tag tag-success">成功</span></div>
+        <p>[步骤详情]</p><small>[时间] · [来源]</small>
+      </div>
+      <div class="tl-item is-failed">
+        <div class="tl-head"><strong>[步骤名]</strong><span class="tag tag-danger">失败</span>
+          <a class="btn-text" onclick="toast('已提交重试','success')">重试</a>
+        </div>
+        <p>[失败原因]</p><small>[时间] · [来源]</small>
+      </div>
+      <div class="tl-item is-pending">
+        <div class="tl-head"><strong>[步骤名]</strong><span class="tag tag-warning">等待执行</span></div>
+        <p>[说明]</p><small>[时间]</small>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn" onclick="toast('已下载','success')">[次操作]</button>
+    <button class="btn btn-primary" onclick="closeAll();openModal('modal-form')">[主操作]</button>
+    <button class="btn" onclick="closeAll()">关闭</button>
+  </div>
+</aside>
+
+<div class="modal" id="modal-form">
+  <div class="modal-head">[弹窗标题]<button class="icon-btn" onclick="closeAll()"><svg class="icon"><use href="#i-close"/></svg></button></div>
+  <div class="modal-body">
+    <div class="field" style="margin-bottom:var(--spacing-lg)">
+      <label class="field-label is-required">[字段名称]</label>
+      <input class="input" id="demoInput" placeholder="请输入[字段名称]">
+      <div class="field-hint is-error hidden" id="demoError">[错误提示文案]</div>
+    </div>
+    <div class="field">
+      <label class="field-label">[字段名称]</label>
+      <textarea class="textarea" rows="3" placeholder="[补充说明]"></textarea>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" onclick="closeAll()">取消</button>
+    <button class="btn btn-primary" onclick="submitDemo()">确定</button>
+  </div>
+</div>
+
+<div class="modal is-narrow" id="modal-confirm">
+  <div class="modal-head"><span id="confirmTitle">[确认标题]</span><button class="icon-btn" onclick="closeAll()"><svg class="icon"><use href="#i-close"/></svg></button></div>
+  <div class="modal-body" id="confirmText">[确认文案]</div>
+  <div class="modal-foot">
+    <button class="btn" onclick="closeAll()">取消</button>
+    <button class="btn btn-primary" id="confirmOk">确定</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg class="icon" id="toastIcon"><use href="#i-check"/></svg><span id="toastText"></span></div>
+
+<script>
+  /* ============================================================
+     最小交互工具：静态原型无需真实接口，按需增删
+     ============================================================ */
+  const $ = (id) => document.getElementById(id);
+
+  /* Web 外壳折叠 */
+  function toggleCollapse() { document.querySelector('.web-layout').classList.toggle('is-collapsed'); }
+
+  /* 浮层开关 */
+  function openModal(id) { $('overlay').classList.add('is-open'); $(id).classList.add('is-open'); }
+  function openDrawer() { $('overlay').classList.add('is-open'); $('drawer').classList.add('is-open'); }
+  function closeAll() {
+    $('overlay').classList.remove('is-open');
+    document.querySelectorAll('.modal').forEach((m) => m.classList.remove('is-open'));
+    $('drawer').classList.remove('is-open');
+  }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
+
+  /* 二次确认：askConfirm('标题', '文案', 可选回调) */
+  function askConfirm(title, text, onOk) {
+    $('confirmTitle').textContent = title;
+    $('confirmText').textContent = text;
+    $('confirmOk').onclick = () => { closeAll(); onOk && onOk(); };
+    openModal('modal-confirm');
+  }
+
+  /* 提示：type 取 success / warn / error */
+  function toast(text, type) {
+    $('toastText').textContent = text;
+    $('toastIcon').innerHTML = '<use href="#' + (type === 'warn' || type === 'error' ? 'i-warn' : 'i-check') + '"/>';
+    $('toastIcon').style.color = type === 'warn' ? 'var(--semi-color-warning)'
+      : type === 'error' ? 'var(--semi-color-danger)' : 'var(--semi-color-success)';
+    const el = $('toast');
+    el.classList.add('is-open');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('is-open'), 2200);
+  }
+
+  /* 表单校验示例：错误态 */
+  function submitDemo() {
+    const value = $('demoInput').value.trim();
+    const invalid = !value;
+    $('demoInput').classList.toggle('is-error', invalid);
+    $('demoError').classList.toggle('hidden', !invalid);
+    if (invalid) return;
+    closeAll();
+    toast('已保存', 'success');
+  }
+</script>
+</body>
+</html>

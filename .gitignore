@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# 环境变量
+.env
+.env.*
+!.env.example
+
+# 凭证与密钥
+credentials*.json
+secrets*.json
+*.key
+*.pem
+*.p12
+id_rsa
+id_ed25519
+id_ecdsa
+
+# 云平台配置
+.aws/
+.kube/
+.gcloud/
+
+# 编辑器 / 工具
+.idea/
+.vscode/
+*.local.json
+__pycache__/
+*.pyc
+node_modules/
